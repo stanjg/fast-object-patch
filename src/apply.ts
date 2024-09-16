@@ -30,16 +30,24 @@ export function applyOperation(
     const [type, path, arg] = op;
 
     let target = result;
-    let keys = path.split("/").slice(1).map(unescapePathComponent);
-    keys.slice(0, -1).forEach((key) => (target = target[key]));
+    const keys = path.split("/");
+    let i = 1;
 
-    if (Array.isArray(target)) {
-        arrayOperations[type](target, keys[keys.length - 1], arg);
-    } else {
-        objectOperations[type](target, keys[keys.length - 1], arg);
+    while (true) {
+        let key = unescapePathComponent(keys[i]!);
+
+        i++;
+        if (i >= keys.length) {
+            if (Array.isArray(target)) {
+                arrayOperations[type](target, key, arg);
+            } else {
+                objectOperations[type](target, key, arg);
+            }
+            return result;
+        }
+
+        target = target[key];
     }
-
-    return result;
 }
 
 export function applyPatch(
@@ -50,4 +58,19 @@ export function applyPatch(
     let result = obj;
     ops.forEach((op) => (result = applyOperation(obj, op, mutate)));
     return result;
+}
+
+export function isInteger(str: string): boolean {
+    let i = 0;
+    const len = str.length;
+    let charCode;
+    while (i < len) {
+        charCode = str.charCodeAt(i);
+        if (charCode >= 48 && charCode <= 57) {
+            i++;
+            continue;
+        }
+        return false;
+    }
+    return true;
 }
